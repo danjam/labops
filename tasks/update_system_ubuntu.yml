@@ -1,0 +1,114 @@
+---
+- block:
+    - name: Check if system is Ubuntu
+      ansible.builtin.assert:
+        that: "ansible_distribution == 'Ubuntu'"
+        fail_msg: "This task file is for Ubuntu systems only"
+        success_msg: "Target is running Ubuntu {{ ansible_distribution_version }}"
+        
+    - name: Hold specified packages from being upgraded
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop: "{{ held_packages | default([]) }}"
+      when: held_packages is defined
+      
+    - name: Get list of available updates before upgrade
+      ansible.builtin.shell: apt list --upgradable 2>/dev/null | grep -v "Listing..." || true
+      register: updates_before
+      changed_when: false
+      
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      register: apt_cache_result
+      
+    - name: Perform system upgrade (with progress output)
+      ansible.builtin.shell: |
+        DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
+      register: apt_upgrade_result
+      changed_when: apt_upgrade_result.stdout is search("upgraded")
+      timeout: "{{ update_timeout | default(600) }}"
+      
+    - name: Perform autoremove and clean
+      ansible.builtin.apt:
+        autoremove: yes
+        autoclean: yes
+      register: apt_clean_result
+      
+    - name: Get list of held packages
+      ansible.builtin.shell: dpkg --get-selections | grep hold || true
+      register: held_pkgs
+      changed_when: false
+      
+    - name: Record system update summary
+      ansible.builtin.set_fact:
+        update_summary:
+          updated: "{{ apt_upgrade_result.stdout is regex('([0-9]+) upgraded') | ternary(apt_upgrade_result.stdout | regex_search('([0-9]+) upgraded', '\\1') | first | int, 0) }}"
+          installed: "{{ apt_upgrade_result.stdout is regex('([0-9]+) newly installed') | ternary(apt_upgrade_result.stdout | regex_search('([0-9]+) newly installed', '\\1') | first | int, 0) }}"
+          removed: "{{ apt_upgrade_result.stdout is regex('([0-9]+) to remove') | ternary(apt_upgrade_result.stdout | regex_search('([0-9]+) to remove', '\\1') | first | int, 0) }}"
+          held: "{{ held_pkgs.stdout_lines | length }}"
+          
+    - name: Display update summary
+      ansible.builtin.debug:
+        msg: |
+          System update summary for {{ inventory_hostname }}:
+            - {{ update_summary.updated }} packages updated
+            - {{ update_summary.installed }} packages newly installed
+            - {{ update_summary.removed }} packages removed
+            - {{ update_summary.held }} packages held back
+      
+    - name: Check if reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+        get_checksum: no
+      register: reboot_required
+      
+    - name: Display reboot requirement
+      ansible.builtin.debug:
+        msg: "Reboot is required for {{ inventory_hostname }}"
+      when: reboot_required.stat.exists
+      
+    - name: Reboot for kernel updates
+      ansible.builtin.reboot:
+        msg: Reboot initiated by Ansible for kernel updates
+        connect_timeout: 5
+        reboot_timeout: "{{ reboot_timeout | default(300) }}"
+        post_reboot_delay: "{{ post_reboot_delay | default(30) }}"
+        test_command: uptime
+      when: 
+        - reboot_required.stat.exists
+        - reboot_on_kernel_update | default(true) | bool
+      register: reboot_result
+      
+    - name: Check for failed services after update
+      ansible.builtin.shell: systemctl list-units --state=failed --no-legend | awk '{print $1}'
+      register: failed_services
+      changed_when: false
+      
+    - name: Display failed services
+      ansible.builtin.debug:
+        msg: "WARNING: Failed services after update: {{ failed_services.stdout_lines | join(', ') }}"
+      when: failed_services.stdout_lines | length > 0
+      
+    - name: Unhold packages that were temporarily held
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: install
+      loop: "{{ temporarily_held_packages | default([]) }}"
+      when: temporarily_held_packages is defined
+      
+  rescue:
+    - name: Log system update failure
+      ansible.builtin.debug:
+        msg: "System update failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      
+    - name: Notify on system update failure
+      ansible.builtin.import_tasks: send_notification.yml
+      vars:
+        notification_subject: "ALERT: System update failed on {{ inventory_hostname }}"
+        notification_body: "System update failed: {{ ansible_failed_result.msg | default('Unknown error') }}. Manual intervention may be required."
+      when: notification_enabled | default(false) | bool
+      
+  tags: system

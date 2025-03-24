@@ -1,0 +1,67 @@
+---
+# This task file handles notifications via various methods
+# Required variables:
+#   - notification_subject: Subject line
+#   - notification_body: Message body
+
+- name: Check required variables
+  ansible.builtin.assert:
+    that:
+      - notification_subject is defined
+      - notification_body is defined
+    fail_msg: "Missing required notification variables"
+    
+- name: Determine notification methods
+  ansible.builtin.set_fact:
+    use_email: "{{ notification_email is defined }}"
+    use_webhook: "{{ notification_webhook_url is defined }}"
+    use_telegram: "{{ telegram_bot_token is defined and telegram_chat_id is defined }}"
+    notification_timestamp: "{{ ansible_date_time.iso8601 }}"
+    
+# - name: Send email notification
+#   community.general.mail:
+#     host: "{{ smtp_server | default('localhost') }}"
+#     port: "{{ smtp_port | default(587) }}"
+#     username: "{{ smtp_username | default(omit) }}"
+#     password: "{{ smtp_password | default(omit) }}"
+#     secure: "{{ smtp_secure | default('starttls') }}"
+#     from: "{{ smtp_from | default('ansible@localhost') }}"
+#     to: "{{ notification_email }}"
+#     subject: "[Ansible] {{ notification_subject }}"
+#     body: |
+#       Host: {{ inventory_hostname }} ({{ ansible_host }})
+#       Time: {{ notification_timestamp }}
+      
+#       {{ notification_body }}
+      
+#       --
+#       This is an automated message from Ansible
+#   delegate_to: localhost
+#   when: use_email | bool
+#   ignore_errors: true
+  
+# - name: Send webhook notification (generic JSON)
+#   ansible.builtin.uri:
+#     url: "{{ notification_webhook_url }}"
+#     method: POST
+#     body_format: json
+#     body:
+#       host: "{{ inventory_hostname }}"
+#       ip: "{{ ansible_host }}"
+#       timestamp: "{{ notification_timestamp }}"
+#       subject: "{{ notification_subject }}"
+#       message: "{{ notification_body }}"
+#     status_code: [200, 201, 202, 204]
+#     headers:
+#       Content-Type: "application/json"
+#       Authorization: "{{ notification_webhook_auth | default(omit) }}"
+#   delegate_to: localhost
+#   when: use_webhook | bool
+#   ignore_errors: true
+  
+
+  
+- name: Log notification
+  ansible.builtin.debug:
+    msg: "Notification sent: {{ notification_subject }}"
+  when: use_email | bool or use_webhook | bool or use_telegram | bool

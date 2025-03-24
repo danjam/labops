@@ -1,0 +1,109 @@
+---
+# This task file verifies system status after updates
+# Runs comprehensive checks to ensure system is healthy
+
+- block:
+    - name: Check for active network connections
+      ansible.builtin.wait_for:
+        host: "{{ ansible_default_ipv4.gateway }}"
+        port: 53
+        timeout: 10
+      register: network_check
+      ignore_errors: true
+    
+    - name: Check external connectivity
+      ansible.builtin.uri:
+        url: https://www.google.com
+        validate_certs: yes
+        timeout: 10
+      register: internet_check
+      ignore_errors: true
+    
+    - name: Check critical services status
+      ansible.builtin.service_facts:
+      register: service_state
+    
+    - name: Get list of critical services
+      ansible.builtin.set_fact:
+        critical_service_list: >-
+          {% set svcs = critical_services | default(['ssh']) %}
+          {% for svc in svcs %}
+            {% if svc + '.service' in service_state.ansible_facts.services %}
+              {{ svc }}
+            {% endif %}
+          {% endfor %}
+          
+    - name: Check if critical services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+      register: service_check
+      loop: "{{ critical_service_list }}"
+      ignore_errors: true
+      changed_when: false
+      check_mode: yes
+      
+    - name: Check disk space after updates
+      ansible.builtin.shell: df -h / | awk 'NR==2 {print $5}'
+      register: disk_usage_after
+      changed_when: false
+      
+    - name: Check system load after updates
+      ansible.builtin.shell: uptime | awk '{print $(NF-2)}'
+      register: system_load_after
+      changed_when: false
+    
+    - name: Compile system verification report
+      ansible.builtin.set_fact:
+        verification_report:
+          network: "{{ network_check is succeeded }}"
+          internet: "{{ internet_check is succeeded }}"
+          services: "{{ service_check.results | rejectattr('failed') | map(attribute='item') | list }}"
+          failed_services: "{{ service_check.results | selectattr('failed') | map(attribute='item') | list }}"
+          disk_usage: "{{ disk_usage_after.stdout }}"
+          system_load: "{{ system_load_after.stdout }}"
+          
+    - name: Display verification report
+      ansible.builtin.debug:
+        msg: |
+          System verification for {{ inventory_hostname }}:
+            Network connectivity: {{ "OK" if verification_report.network else "FAILED" }}
+            Internet connectivity: {{ "OK" if verification_report.internet else "FAILED" }}
+            Critical services running: {{ verification_report.services | join(', ') }}
+            Failed services: {{ verification_report.failed_services | join(', ') if verification_report.failed_services else "None" }}
+            Disk usage: {{ verification_report.disk_usage }}
+            System load: {{ verification_report.system_load }}
+            
+    - name: Calculate verification score
+      ansible.builtin.set_fact:
+        verification_score: >-
+          {{ 
+            (verification_report.network | bool) | int +
+            (verification_report.internet | bool) | int +
+            (verification_report.failed_services | length == 0) | int +
+            (verification_report.disk_usage | regex_replace('%', '') | int < 90) | int
+          }}
+        max_score: 4
+          
+    - name: Evaluate system health
+      ansible.builtin.debug:
+        msg: "System health after update: {{ (verification_score / max_score * 100) | int }}% ({{ verification_score }}/{{ max_score }})"
+      
+    - name: Alert on verification failures
+      ansible.builtin.fail:
+        msg: "System verification failed with score {{ verification_score }}/{{ max_score }}. See report for details."
+      when: 
+        - verification_score < 3
+        - verification_force | default(false) | bool == false
+        
+  rescue:
+    - name: Log verification failure
+      ansible.builtin.debug:
+        msg: "System verification failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      
+    - name: Notify on verification failure
+      ansible.builtin.import_tasks: send_notification.yml
+      vars:
+        notification_subject: "ALERT: System verification failed on {{ inventory_hostname }}"
+        notification_body: "System verification failed: {{ ansible_failed_result.msg | default('Unknown error') }}. Manual intervention may be required."
+      when: notification_enabled | default(false) | bool

@@ -1,0 +1,100 @@
+---
+- block:
+    - name: Check Docker service status
+      ansible.builtin.service_facts:
+      register: service_state
+    
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+      when: "'docker.service' in service_state.ansible_facts.services"
+      register: docker_service_result
+      
+    - name: Check Docker daemon health
+      ansible.builtin.command: docker info
+      register: docker_info
+      changed_when: false
+      failed_when: docker_info.rc != 0
+      
+    - name: Check for compose files (docker-compose.yml or compose.yml)
+      ansible.builtin.find:
+        paths: "{{ docker_path }}"
+        patterns: ["docker-compose.yml", "compose.yml"]
+        recurse: no
+      register: compose_files
+      
+    - name: Fail if no compose files found
+      ansible.builtin.fail:
+        msg: "No docker-compose files found in {{ docker_path }}"
+      when: compose_files.matched == 0
+      
+    - name: Pull updates for each compose project
+      community.docker.docker_compose_v2:
+        project_src: "{{ item.path | dirname }}"
+        project_name: "{{ (item.path | dirname | basename) | replace('.', '-') }}"
+        files: ["{{ item.path | basename }}"]
+        pull: always
+        state: present
+      loop: "{{ compose_files.files }}"
+      register: docker_pull_result
+      loop_control:
+        label: "{{ item.path | basename }} in {{ item.path | dirname }}"
+        
+    - name: Check container health after update
+      ansible.builtin.shell: |
+        docker ps --format '{{ '{{' }}.Names{{ '}}' }},{{ '{{' }}.Status{{ '}}' }}' | grep -v 'Exited'
+      register: container_health
+      changed_when: false
+      
+    - name: Display updated containers
+      ansible.builtin.debug:
+        msg: "Updated projects: {% for item in docker_pull_result.results %}'{{ item.item.path | dirname | basename }}'{{ '' if loop.last else ', ' }}{% endfor %}"
+      when: docker_pull_result.results | length > 0
+      
+    - name: Identify unhealthy containers
+      ansible.builtin.set_fact:
+        unhealthy_containers: "{{ container_health.stdout_lines | select('regex', 'unhealthy') | list }}"
+      
+    - name: Display unhealthy containers
+      ansible.builtin.debug:
+        msg: "WARNING: Unhealthy containers found: {{ unhealthy_containers | join(', ') }}"
+      when: unhealthy_containers | length > 0
+      
+    - name: Remove unused Docker resources
+      community.docker.docker_prune:
+        containers: yes
+        images: yes
+        networks: yes
+        volumes: "{{ docker_prune_volumes | default(false) | bool }}"
+        builder_cache: yes
+        images_filters:
+          dangling: false
+        containers_filters:
+          label: "maintainer=homelab"
+      register: prune_result
+      
+    - name: Display prune results
+      ansible.builtin.debug:
+        msg: |
+          Pruned:
+            - Containers: {{ prune_result.containers_deleted | default([]) | length }}
+            - Images: {{ prune_result.images_deleted | default([]) | length }}
+            - Networks: {{ prune_result.networks_deleted | default([]) | length }}
+            - Volumes: {{ prune_result.volumes_deleted | default([]) | length }}
+          Space reclaimed: {{ prune_result.space_reclaimed | default(0) | human_readable }}
+          
+  rescue:
+    - name: Log Docker management failure
+      ansible.builtin.debug:
+        msg: "Docker management failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      
+    - name: Attempt Docker service restart on failure
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+      when: "'docker.service' in service_state.ansible_facts.services"
+      ignore_errors: true
+  
+  tags: docker

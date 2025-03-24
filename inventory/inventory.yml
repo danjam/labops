@@ -1,0 +1,107 @@
+---
+# Main inventory file
+all:
+  children:
+    
+    # OS-based groups -----------------------------------------------------------------------------
+
+    ubuntu:
+      hosts:
+        seraph:
+          ansible_host: 100.76.155.100
+        orac:
+          ansible_host: 100.111.153.113
+        jarvis:
+          ansible_host: 100.90.148.27
+        valis:
+          ansible_host: 100.124.86.39
+          ansible_user: root
+      vars:
+        ansible_python_interpreter: auto_silent
+        ansible_user: danjam
+        ansible_become: yes
+        ansible_become_method: sudo
+        update_timeout: 600
+        reboot_timeout: 300
+        post_reboot_delay: 30
+        critical_services:
+          - ssh
+          - docker
+
+    synology:
+      hosts:
+        harlans_world:
+          ansible_host: 100.102.133.94
+          ansible_user: danjam
+      vars:
+        ansible_user: danjam
+        ansible_become: yes
+        update_timeout: 1200
+        # backup_before_update: yes
+
+    windows:
+      hosts:
+        nucleus:
+          ansible_host: 100.127.84.23
+          ansible_user: danjam
+        glados:
+          ansible_host: 100.68.128.124
+          ansible_user: dsjam
+      vars:
+        ansible_connection: winrm
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_transport: ntlm
+        ansible_user: administrator
+
+    apple:
+      hosts:
+        work-macbook:
+          ansible_host: 100.95.100.54
+          ansible_user: dannyjames
+      vars:
+        ansible_user: danjam
+        ansible_become: yes
+        ansible_become_method: sudo
+
+    # Functional groups defined by the hosts they contain -----------------------------------------
+
+    storage:
+      hosts:
+        harlans_world:
+    
+    workstations:
+      hosts:
+        work-macbook:
+        nucleus:
+        glados:
+
+    homelab:
+      children:
+        ubuntu:
+
+    # OS-family groups ----------------------------------------------------------------------------
+
+    linux:
+      children:
+        ubuntu:
+        synology:
+    
+    unix_like:
+      children:
+        linux:
+        apple:
+    
+    all_systems:
+      children:
+        unix_like:
+        windows:
+
+  # Global variables ###############################################################################
+
+  vars:
+    ansible_connection: ssh
+    ansible_ssh_timeout: 30
+    default_docker_path: /opt/homelab
+    notification_email: ansible@dannyjames.net
+    # backup_retention_days: 7
+    enable_monitoring: yes

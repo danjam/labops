@@ -1,0 +1,97 @@
+---
+- block:
+    - name: Check connectivity
+      ansible.builtin.ping:
+      register: ping_result
+      failed_when: ping_result is failed
+
+    - name: Gather critical system information
+      ansible.builtin.setup:
+        gather_subset:
+          - hardware
+          - virtual
+          - network
+      register: system_info
+
+    - name: Check disk space on all mounted filesystems
+      ansible.builtin.shell: df -h | grep -v "tmpfs\|snap" | awk 'NR>1 {print $1 "," $5 "," $6}'
+      register: disk_usage_all
+      changed_when: false
+      
+    - name: Parse disk usage information
+      ansible.builtin.set_fact:
+        disk_usage_parsed: "{{ disk_usage_all.stdout_lines | map('split', ',') | list }}"
+      
+    - name: Check system memory usage
+      ansible.builtin.shell: free -m | awk 'NR==2 {print int($3*100/$2)}'
+      register: memory_usage
+      changed_when: false
+      
+    - name: Check system load averages
+      ansible.builtin.shell: "uptime | grep -oP 'load average: \\K.*'"
+      register: system_load
+      changed_when: false
+      
+    - name: Check for running processes
+      ansible.builtin.shell: ps aux | wc -l
+      register: process_count
+      changed_when: false
+      
+    - name: Check available updates count
+      ansible.builtin.shell: apt list --upgradable 2>/dev/null | grep -v "Listing..." | wc -l
+      register: updates_available
+      changed_when: false
+      when: ansible_facts['os_family'] == 'Debian'
+      
+    - name: Display system status
+      ansible.builtin.debug:
+        msg: |
+          System: {{ ansible_hostname }} ({{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }})
+          Memory usage: {{ memory_usage.stdout }}%
+          Load average: {{ system_load.stdout }}
+          Process count: {{ process_count.stdout }}
+          Updates available: {{ updates_available.stdout | default('N/A') }}
+
+    - name: Generate warnings for problematic filesystems
+      ansible.builtin.debug:
+        msg: "WARNING: Disk usage is high on {{ item[2] }} ({{ item[1] }})"
+      loop: "{{ disk_usage_parsed }}"
+      when: item[1] | regex_replace('%', '') | int > 85
+      
+    - name: Generate warning for high memory usage
+      ansible.builtin.debug:
+        msg: "WARNING: Memory usage is high ({{ memory_usage.stdout }}%)"
+      when: memory_usage.stdout | int > 90
+      
+    - name: Generate warning for high system load
+      ansible.builtin.debug:
+        msg: "WARNING: System load is high ({{ system_load.stdout }})"
+      when: system_load.stdout.split(', ')[0] | float > (ansible_facts['processor_vcpus'] | int)
+      
+    - name: Register combined system health status
+      ansible.builtin.set_fact:
+        system_health_issues: "
+          {{ 
+          (disk_usage_parsed | selectattr('1', 'regex', '^[8-9][0-9]%|100%') | list) +
+          ([memory_usage.stdout] if memory_usage.stdout | int > 90 else []) +
+          ([system_load.stdout] if system_load.stdout.split(', ')[0] | float > (ansible_facts['processor_vcpus'] | int) else [])
+          }}"
+        
+    - name: Fail if system health is critically poor
+      ansible.builtin.fail:
+        msg: "System health is critically poor: {{ system_health_issues | join(', ') }}"
+      when: 
+        - system_health_issues | length > 2
+        - not healthcheck_force | default(false) | bool
+        
+  rescue:
+    - name: Log healthcheck failure
+      ansible.builtin.debug:
+        msg: "System healthcheck failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+        
+    - name: Notify on healthcheck failure
+      ansible.builtin.import_tasks: send_notification.yml
+      vars:
+        notification_subject: "ALERT: Healthcheck failed on {{ inventory_hostname }}"
+        notification_body: "System healthcheck failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      when: notification_enabled | default(false) | bool

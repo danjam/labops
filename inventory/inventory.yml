@@ -104,7 +104,3 @@ all:
   vars:
     ansible_connection: ssh
     ansible_ssh_timeout: 30
-    default_docker_path: /opt/homelab
-    notification_email: ansible@dannyjames.net
-    # backup_retention_days: 7
-    enable_monitoring: yes

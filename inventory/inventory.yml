@@ -37,7 +37,6 @@ all:
         ansible_user: danjam
         ansible_become: yes
         update_timeout: 1200
-        # backup_before_update: yes
 
     windows:
       hosts:
@@ -76,6 +75,10 @@ all:
         glados:
 
     homelab:
+      children:
+        ubuntu:
+
+    docker_hosts:
       children:
         ubuntu:
 

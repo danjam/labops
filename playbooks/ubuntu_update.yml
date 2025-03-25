@@ -1,0 +1,6 @@
+- hosts: ubuntu
+  roles:
+    - role: ubuntu_update
+      vars:
+        upgrade_type: full
+        auto_reboot: true

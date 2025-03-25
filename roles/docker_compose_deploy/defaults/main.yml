@@ -1,0 +1,6 @@
+---
+# Directory containing docker-compose.yml
+docker_compose_project_dir: "."
+
+# Docker compose file name
+docker_compose_file: docker-compose.yml

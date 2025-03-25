@@ -1,0 +1,16 @@
+---
+- name: Check if reboot required
+  stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+  listen: Check if reboot required
+
+- name: Reboot if required
+  reboot:
+    reboot_timeout: "{{ reboot_timeout }}"
+    pre_reboot_delay: "{{ reboot_delay }}"
+    msg: "Reboot initiated by Ansible due to package upgrades"
+  when:
+    - reboot_required.stat.exists
+    - auto_reboot | bool
+  listen: Check if reboot required

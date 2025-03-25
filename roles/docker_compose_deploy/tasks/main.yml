@@ -1,0 +1,35 @@
+---
+- name: Pull Docker images
+  community.docker.docker_compose_v2:
+    project_src: "{{ docker_compose_project_dir }}"
+    files: "{{ docker_compose_file }}"
+    pull: policy
+  tags:
+    - pull
+
+- name: Start Docker containers
+  community.docker.docker_compose_v2:
+    project_src: "{{ docker_compose_project_dir }}"
+    files: "{{ docker_compose_file }}"
+    state: present
+    remove_orphans: yes
+  tags:
+    - deploy
+
+- name: Prune Docker images
+  ansible.builtin.command: docker image prune -af
+  tags:
+    - cleanup
+    - prune
+
+- name: Prune Docker volumes
+  ansible.builtin.command: docker volume prune -f
+  tags:
+    - cleanup
+    - prune
+
+- name: Prune Docker system
+  ansible.builtin.command: docker system prune -f
+  tags:
+    - cleanup
+    - prune

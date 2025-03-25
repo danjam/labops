@@ -1,0 +1,28 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: "{{ apt_cache_valid_time }}"
+  become: yes
+  tags:
+    - update
+    - packages
+
+- name: Upgrade all packages
+  apt:
+    upgrade: "{{ upgrade_type }}"
+  become: yes
+  notify: Check if reboot required
+  tags:
+    - update
+    - packages
+
+- name: Remove dependencies that are no longer required
+  apt:
+    autoremove: yes
+    autoclean: yes
+  become: yes
+  tags:
+    - update
+    - packages
+    - cleanup

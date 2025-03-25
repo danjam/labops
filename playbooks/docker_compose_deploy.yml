@@ -1,0 +1,4 @@
+- hosts: docker_hosts
+  roles:
+    - role: docker_compose_deploy
+      docker_compose_project_dir: /opt/homelab

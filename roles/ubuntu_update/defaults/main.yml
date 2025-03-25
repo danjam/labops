@@ -1,0 +1,19 @@
+---
+# How long the apt cache should be considered valid (in seconds)
+apt_cache_valid_time: 3600
+
+# Type of upgrade: safe, full, dist
+# - safe: upgrade only packages that won't remove others (apt-get upgrade)
+# - full: upgrade all packages, removing others if needed (apt-get dist-upgrade)
+# - dist: full upgrade, potentially adding new packages (apt full-upgrade)
+upgrade_type: "safe"
+
+# Whether to automatically reboot if required
+auto_reboot: false
+
+# The timeout for the reboot (in seconds)
+reboot_timeout: 600
+
+# The delay for the reboot (in seconds)
+reboot_delay: 5
+

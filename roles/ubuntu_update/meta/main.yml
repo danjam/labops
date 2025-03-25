@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: Your Name
+  description: Role for updating Ubuntu packages
+  company: Your Company
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - bionic  # 18.04
+        - focal   # 20.04
+        - jammy   # 22.04
+        - noble   # 24.04
+  galaxy_tags:
+    - system
+    - ubuntu
+    - update
+    - packages
+
+dependencies: []

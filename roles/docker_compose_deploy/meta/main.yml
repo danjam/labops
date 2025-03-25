@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: docker_compose_deploy
-  author: Your Name
+  author: danjam
   description: Role to deploy Docker Compose applications and clean up Docker resources
   license: MIT
   min_ansible_version: 2.10

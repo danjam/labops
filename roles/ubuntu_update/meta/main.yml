@@ -1,10 +1,10 @@
 ---
 galaxy_info:
-  author: Your Name
+  role_name: ubuntu_update
+  author: danjam
   description: Role for updating Ubuntu packages
-  company: Your Company
   license: MIT
-  min_ansible_version: 2.9
+  min_ansible_version: 2.10
   platforms:
     - name: Ubuntu
       versions:

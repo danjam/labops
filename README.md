@@ -31,6 +31,8 @@ LabOps automates three primary management tasks:
 │   └── ubuntu_update/           # Role for Ubuntu system updates
 ├── run.sh                       # Wrapper script for running playbooks
 ├── requirements.yml             # Ansible Galaxy requirements
+├── tasks/
+│   └── check_secrets.yml        # Task for validating secrets configuration
 └── vars/
     └── secrets.yml.template     # Template for secrets configuration
 ```
@@ -144,6 +146,16 @@ ansible-playbook playbooks/docker_compose_deploy.yml --tags "deploy"
 
 # Clean up Docker resources only
 ansible-playbook playbooks/docker_compose_deploy.yml --tags "cleanup"
+```
+
+### Telegram Notification Tags
+
+```bash
+# Only run notification tasks
+ansible-playbook playbooks/your-playbook.yml --tags "telegram,notification"
+
+# Skip notification tasks
+ansible-playbook playbooks/your-playbook.yml --skip-tags "notification"
 ```
 
 ## 🔍 Inventory Structure
@@ -317,6 +329,19 @@ Edit `playbooks/docker_compose_deploy.yml` to modify the Docker Compose director
         docker_compose_project_dir: /path/to/docker/compose
 ```
 
+### Using the Main Playbook
+
+The `labops.yml` playbook includes all roles and performs validation:
+
+```yaml
+ansible-playbook playbooks/labops.yml -kK
+```
+
+This playbook:
+1. Validates the secrets file structure
+2. Runs the ubuntu_update role on Ubuntu hosts
+3. Runs the docker_compose_deploy role on Docker hosts
+
 ## 🔒 Security Best Practices
 
 - Replace the `-kK` flags (password prompts) with SSH key authentication
@@ -327,6 +352,7 @@ Edit `playbooks/docker_compose_deploy.yml` to modify the Docker Compose director
   ```
 - Consider using `ansible-vault encrypt_string` for encrypting individual variables
 - Store vault passwords in a secure location or use a password manager integration
+- The `check_secrets.yml` task validates that your secrets file exists and contains the required variables
 
 ## ❓ Troubleshooting
 
@@ -365,6 +391,19 @@ Edit `playbooks/docker_compose_deploy.yml` to modify the Docker Compose director
 - **Docker API Connection Errors**:
   - Ensure the Docker service is running: `systemctl status docker`
   - Check the user has permissions to access the Docker socket
+
+### Secrets Validation
+
+If you encounter errors with the secrets validation:
+```
+TASK [Fail if secrets file doesn't exist] *********************************************
+fatal: [localhost]: FAILED! => {"changed": false, "msg": "The secrets.yml file is required but was not found..."}
+```
+
+Make sure to:
+1. Create the secrets file from the template
+2. Add your Telegram bot token and chat ID
+3. Encrypt the file with Ansible Vault
 
 ## 📊 Maintenance
 

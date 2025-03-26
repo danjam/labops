@@ -5,19 +5,23 @@
 collections:
   # Required for docker_compose_deploy role
   - name: community.docker
-    version: ">=3.0.0"
+    version: ">=3.1.0"
 
-  # General utilities
+  # Required for ubuntu_update role (reboot module)
   - name: ansible.posix
-    version: ">=1.5.0"  # For reboot module and other posix-related tasks
+    version: ">=1.5.0"
 
   # Windows support
   - name: ansible.windows
-    version: ">=1.12.0"
+    version: ">=1.14.0"
 
   # General utilities
   - name: community.general
-    version: ">=6.0.0"
+    version: ">=6.1.0"
+
+  # Required for telegram_notification role
+  - name: ansible.netcommon
+    version: ">=5.0.0"  # For URI module enhancements
 
 # External roles that might be used by the project
 # Uncomment if you need to include external roles

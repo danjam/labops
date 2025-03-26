@@ -29,14 +29,6 @@ Available variables are listed below, along with default values (see `defaults/m
 | `reboot_timeout` | How long (in seconds) to wait for the reboot to complete | `600` |
 | `reboot_delay` | How long (in seconds) to wait before initiating the reboot | `5` |
 
-## Tags
-
-The role uses the following tags:
-
-- `update`: Used for updating the apt cache and packages
-- `packages`: General tag for package management tasks
-- `cleanup`: For removing unused dependencies
-
 ## Example Playbook
 
 Basic usage:
@@ -59,6 +51,14 @@ With customized settings:
         reboot_timeout: 300
 ```
 
+## Tags
+
+The role uses the following tags:
+
+- `update`: Used for updating the apt cache and packages
+- `packages`: General tag for package management tasks
+- `cleanup`: For removing unused dependencies
+
 Run with specific tags:
 
 ```bash
@@ -69,9 +69,18 @@ ansible-playbook playbook.yml --tags "update"
 ansible-playbook playbook.yml --tags "cleanup"
 ```
 
-## Integration with Telegram Notifications
+## Handlers
 
-The ubuntu_update role can be integrated with the telegram_notification role for status alerts:
+The role includes the following handlers:
+
+- `Check if reboot required`: Checks if a system reboot is required after package updates
+- `Reboot if required`: Executes the reboot when necessary (only runs if `auto_reboot` is enabled)
+
+## Integration with Other Roles
+
+### Telegram Notifications
+
+This role can be integrated with the telegram_notification role for status alerts:
 
 ```yaml
 - hosts: ubuntu
@@ -93,12 +102,43 @@ The ubuntu_update role can be integrated with the telegram_notification role for
         telegram_chat_id: "{{ telegram_chat_id }}"
 ```
 
-## Handlers
+## Advanced Usage
 
-The role includes the following handlers:
+### Limiting Update Scope
 
-- `Check if reboot required`: Checks if a system reboot is required after package updates
-- `Reboot if required`: Executes the reboot when necessary (only runs if `auto_reboot` is enabled)
+To focus updates on specific packages or exclude certain packages, you can add pre-tasks to your playbook:
+
+```yaml
+- hosts: ubuntu
+  pre_tasks:
+    - name: Hold specific packages
+      ansible.builtin.dpkg_selections:
+        name: postgresql-12
+        selection: hold
+  roles:
+    - role: ubuntu_update
+```
+
+### Handling Large Systems
+
+For systems with many packages or limited resources, you can adjust the approach:
+
+```yaml
+- hosts: ubuntu
+  roles:
+    - role: ubuntu_update
+      vars:
+        upgrade_type: safe  # More conservative upgrade strategy
+        apt_cache_valid_time: 86400  # Longer cache validity (24 hours)
+```
+
+## Compatibility
+
+This role is compatible with the following Ubuntu versions:
+- Ubuntu 18.04 Bionic Beaver
+- Ubuntu 20.04 Focal Fossa
+- Ubuntu 22.04 Jammy Jellyfish
+- Ubuntu 24.04 Noble Numbat
 
 ## License
 

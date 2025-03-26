@@ -2,29 +2,29 @@
 
 This Ansible role manages Docker Compose applications by handling deployment, updates, and resource cleanup operations.
 
+## Overview
+
+The docker_compose_deploy role provides the following functionality:
+- Starts or updates Docker Compose services
+- Automatically pulls the latest Docker images
+- Removes orphaned containers
+- Cleans up unused Docker resources (containers, images, networks, volumes)
+
 ## Requirements
 
 - Docker installed on the target host
 - Docker Compose V2 installed on the target host
 - Ansible 2.10 or higher
-- community.docker collection installed (`ansible-galaxy collection install community.docker`)
+- community.docker collection installed
 
 ## Role Variables
+
+Available variables are listed below, along with default values (see `defaults/main.yml`):
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `docker_compose_project_dir` | Directory containing docker-compose.yml | `"."` |
 | `docker_compose_file` | Docker compose file name | `docker-compose.yml` |
-
-## Role Tags
-
-This role supports the following tags for granular execution:
-
-| Tag | Description |
-|-----|-------------|
-| `deploy` | Pull images and deploy/update containers |
-| `cleanup` | Remove unused Docker resources (images, containers, networks, etc.) |
-| `pull` | Only pull Docker images without deployment |
 
 ## Example Playbook
 
@@ -49,7 +49,30 @@ Setting custom Docker Compose directory:
         docker_compose_file: docker-compose.prod.yml
 ```
 
-Integration with notifications:
+## Tags
+
+This role supports the following tags for granular execution:
+
+| Tag | Description |
+|-----|-------------|
+| `deploy` | Pull images and deploy/update containers |
+| `cleanup` | Remove unused Docker resources |
+
+Usage examples:
+
+```bash
+# Pull images and deploy only
+ansible-playbook playbook.yml --tags "deploy"
+
+# Cleanup only
+ansible-playbook playbook.yml --tags "cleanup"
+```
+
+## Integration with Other Roles
+
+### Telegram Notifications
+
+This role can be integrated with the telegram_notification role for status alerts:
 
 ```yaml
 ---
@@ -73,21 +96,6 @@ Integration with notifications:
 
 ## Advanced Usage
 
-### Tag-based Execution
-
-You can run specific parts of the role using tags:
-
-```bash
-# Pull images only
-ansible-playbook playbook.yml --tags "pull"
-
-# Deploy only
-ansible-playbook playbook.yml --tags "deploy"
-
-# Cleanup only
-ansible-playbook playbook.yml --tags "cleanup"
-```
-
 ### Multiple Docker Compose Files
 
 To deploy multiple Docker Compose applications:
@@ -109,7 +117,7 @@ To deploy multiple Docker Compose applications:
         docker_compose_project_dir: /opt/app2
 ```
 
-### Resource Management Controls
+### Resource Management
 
 The role automatically performs cleanup operations to prevent resource accumulation. The cleanup process:
 
@@ -120,14 +128,6 @@ The role automatically performs cleanup operations to prevent resource accumulat
 - Purges the builder cache
 
 This helps prevent disk space issues on long-running Docker hosts.
-
-## Compatibility
-
-This role is compatible with:
-
-- Docker Engine 20.10.x and newer
-- Docker Compose V2 (using the `docker compose` plugin format)
-- Operating systems where Docker and Docker Compose are supported
 
 ## Troubleshooting
 
@@ -145,9 +145,13 @@ Common issues and their solutions:
 
 4. **Resource cleanup fails**: The cleanup operations require additional permissions; ensure the user has full Docker admin rights
 
-## Dependencies
+## Compatibility
 
-This role has no dependencies on other Ansible roles, but it requires the community.docker collection to be installed.
+This role is compatible with:
+
+- Docker Engine 20.10.x and newer
+- Docker Compose V2 (using the `docker compose` plugin format)
+- Ubuntu, Debian, and EL (RHEL/CentOS) operating systems
 
 ## License
 

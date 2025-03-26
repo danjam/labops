@@ -23,6 +23,7 @@ LabOps automates three primary management tasks:
 │   └── inventory.yml            # Host inventory with platform and functional grouping
 ├── playbooks/
 │   ├── docker_compose_deploy.yml # Docker deployment playbook
+│   ├── labops.yml               # Main playbook that includes all roles
 │   └── ubuntu_update.yml        # Ubuntu update playbook
 ├── roles/
 │   ├── docker_compose_deploy/   # Role for Docker Compose deployments
@@ -118,7 +119,7 @@ If you've encrypted your secrets file:
 ```bash
 ansible-playbook playbooks/your-playbook.yml -kK --ask-vault-pass
 # Or using a vault password file
-ansible-playbook playbooks/your-playbook.yml -kK --vault-password-file .vault_pass
+ansible-playbook playbooks/your-playbook.yml -kK --vault-password-file .vault_password
 ```
 
 ## 🏷️ Using Tags
@@ -208,7 +209,8 @@ Manages Docker Compose applications:
 - hosts: docker_hosts
   roles:
     - role: docker_compose_deploy
-      docker_compose_project_dir: /opt/homelab
+      vars:
+        docker_compose_project_dir: /opt/homelab
 ```
 
 [Detailed docker_compose_deploy documentation](./roles/docker_compose_deploy/README.md)
@@ -237,7 +239,7 @@ Sends notifications via Telegram:
       vars:
         notification_subject: "System Update"
         notification_body: "Ubuntu updates completed on {{ inventory_hostname }}"
-        telegram_bot_token: "{{ telegram_bot_key }}"
+        telegram_bot_token: "{{ telegram_bot_token }}"
         telegram_chat_id: "{{ telegram_chat_id }}"
 ```
 
@@ -267,7 +269,7 @@ Here's an example of a complete management workflow:
       vars:
         notification_subject: "System Update"
         notification_body: "✅ Ubuntu update completed on {{ inventory_hostname }}"
-        telegram_bot_token: "{{ telegram_bot_key }}"
+        telegram_bot_token: "{{ telegram_bot_token }}"
         telegram_chat_id: "{{ telegram_chat_id }}"
 
 - hosts: docker_hosts
@@ -275,7 +277,8 @@ Here's an example of a complete management workflow:
     - vars/secrets.yml
   roles:
     - role: docker_compose_deploy
-      docker_compose_project_dir: /opt/homelab
+      vars:
+        docker_compose_project_dir: /opt/homelab
   post_tasks:
     - name: Notify about Docker deployment
       include_role:
@@ -283,7 +286,7 @@ Here's an example of a complete management workflow:
       vars:
         notification_subject: "Docker Deployment"
         notification_body: "🐳 Docker applications deployed on {{ inventory_hostname }}"
-        telegram_bot_token: "{{ telegram_bot_key }}"
+        telegram_bot_token: "{{ telegram_bot_token }}"
         telegram_chat_id: "{{ telegram_chat_id }}"
 ```
 
@@ -310,7 +313,8 @@ Edit `playbooks/docker_compose_deploy.yml` to modify the Docker Compose director
 - hosts: docker_hosts
   roles:
     - role: docker_compose_deploy
-      docker_compose_project_dir: /path/to/docker/compose
+      vars:
+        docker_compose_project_dir: /path/to/docker/compose
 ```
 
 ## 🔒 Security Best Practices

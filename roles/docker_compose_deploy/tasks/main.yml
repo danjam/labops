@@ -1,4 +1,32 @@
 ---
+- name: Check Docker and Docker Compose requirements
+  block:
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_version
+      failed_when: false
+      changed_when: false
+
+    - name: Check if Docker Compose is installed
+      command: docker compose version
+      register: docker_compose_version
+      failed_when: false
+      changed_when: false
+
+    - name: Verify Docker and Docker Compose requirements
+      assert:
+        that:
+          - docker_version.rc == 0
+          - docker_compose_version.rc == 0
+        fail_msg: >
+          Docker and/or Docker Compose are not properly installed on this host.
+          Please ensure both are installed before running this role.
+      tags:
+        - always
+  tags:
+    - always
+
+# Continue with the existing tasks
 - name: Start Docker containers
   community.docker.docker_compose_v2:
     project_src: "{{ docker_compose_project_dir }}"
@@ -18,3 +46,5 @@
     builder_cache: yes
     images_filters:
       dangling: false
+  tags:
+    - cleanup

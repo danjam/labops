@@ -1,3 +1,14 @@
+---
+# Initial play to validate secrets only once
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Check and validate secrets
+      include_tasks: ../tasks/check_secrets.yml
+      tags: always
+
+# Regular playbooks that use the secrets
 - hosts: ubuntu
   vars_files:
     - ../vars/secrets.yml

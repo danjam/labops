@@ -18,21 +18,3 @@
     builder_cache: yes
     images_filters:
       dangling: false
-
-# - name: Prune Docker images
-#   ansible.builtin.command: docker image prune -af
-#   tags:
-#     - cleanup
-#     - prune
-
-# - name: Prune Docker volumes
-#   ansible.builtin.command: docker volume prune -f
-#   tags:
-#     - cleanup
-#     - prune
-
-# - name: Prune Docker system
-#   ansible.builtin.command: docker system prune -f
-#   tags:
-#     - cleanup
-#     - prune

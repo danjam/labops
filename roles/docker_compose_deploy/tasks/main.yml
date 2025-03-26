@@ -1,22 +1,24 @@
 ---
 - name: Check Docker and Docker Compose requirements
   block:
-    - name: Check if Docker is installed
-      command: docker --version
-      register: docker_version
+    - name: Gather Docker facts
+      community.docker.docker_host_info:
+      register: docker_info
       failed_when: false
       changed_when: false
 
-    - name: Check if Docker Compose is installed
-      command: docker compose version
+    - name: Check if Docker Compose plugin is installed
+      ansible.builtin.shell: docker compose version
       register: docker_compose_version
       failed_when: false
       changed_when: false
+      args:
+        executable: /bin/bash
 
     - name: Verify Docker and Docker Compose requirements
-      assert:
+      ansible.builtin.assert:
         that:
-          - docker_version.rc == 0
+          - docker_info is success
           - docker_compose_version.rc == 0
         fail_msg: >
           Docker and/or Docker Compose are not properly installed on this host.

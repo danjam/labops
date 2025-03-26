@@ -18,13 +18,3 @@ collections:
   # General utilities
   - name: community.general
     version: ">=6.1.0"
-
-  # Required for telegram_notification role
-  - name: ansible.netcommon
-    version: ">=5.0.0"  # For URI module enhancements
-
-# External roles that might be used by the project
-# Uncomment if you need to include external roles
-# roles:
-#   - name: geerlingguy.docker
-#     version: ">=7.0.0"

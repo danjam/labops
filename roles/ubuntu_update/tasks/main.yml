@@ -12,7 +12,29 @@
   apt:
     upgrade: "{{ upgrade_type }}"
   become: yes
-  notify: Check if reboot required
+  register: upgrade_result
+  tags:
+    - update
+    - packages
+
+- name: Check if reboot required
+  stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+  become: yes
+  tags:
+    - update
+    - packages
+
+- name: Reboot if required
+  reboot:
+    reboot_timeout: "{{ reboot_timeout }}"
+    pre_reboot_delay: "{{ reboot_delay }}"
+    msg: "Reboot initiated by Ansible due to package upgrades"
+  become: yes
+  when:
+    - reboot_required.stat.exists
+    - auto_reboot | bool
   tags:
     - update
     - packages

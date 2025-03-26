@@ -12,10 +12,13 @@ The docker_compose_deploy role provides the following functionality:
 
 ## Requirements
 
-- Docker installed on the target host
-- Docker Compose V2 installed on the target host
+This role has the following dependencies:
+- Docker Engine must be installed on the target host
+- Docker Compose V2 must be installed on the target host (using the `docker compose` plugin format)
 - Ansible 2.10 or higher
 - community.docker collection installed
+
+> **Note:** This role will check if Docker and Docker Compose are properly installed and available on the target host. If either dependency is missing, the role will fail with an appropriate error message. **The role does not install Docker or Docker Compose for you** - you should ensure these are installed beforehand or use a dedicated role for installing Docker before including this role.
 
 ## Role Variables
 
@@ -117,6 +120,21 @@ To deploy multiple Docker Compose applications:
         docker_compose_project_dir: /opt/app2
 ```
 
+### Dependency Installation
+
+This role doesn't install Docker or Docker Compose for you. If you need to install these dependencies, consider using a dedicated role or tasks before including the docker_compose_deploy role:
+
+```yaml
+---
+- hosts: docker_servers
+  roles:
+    # Install Docker first
+    - role: some.docker_installation_role
+    
+    # Then deploy Docker Compose applications
+    - role: docker_compose_deploy
+```
+
 ### Resource Management
 
 The role automatically performs cleanup operations to prevent resource accumulation. The cleanup process:
@@ -144,6 +162,8 @@ Common issues and their solutions:
 3. **Networking issues when pulling images**: Check that the host has internet access and can reach Docker Hub or your private registry
 
 4. **Resource cleanup fails**: The cleanup operations require additional permissions; ensure the user has full Docker admin rights
+
+5. **Docker or Docker Compose not found**: The role will check for these dependencies and fail with a clear error message. Install Docker and Docker Compose on the target host before running this role.
 
 ## Compatibility
 

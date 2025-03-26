@@ -1,0 +1,16 @@
+- hosts: ubuntu
+  vars_files:
+    - ../vars/secrets.yml
+  roles:
+    - role: ubuntu_update
+      vars:
+        upgrade_type: full
+        auto_reboot: true
+
+- hosts: docker_hosts
+  vars_files:
+    - ../vars/secrets.yml
+  roles:
+    - role: docker_compose_deploy
+      vars:
+        docker_compose_project_dir: /opt/homelab

@@ -3,3 +3,5 @@
 .vscode
 logs
 _OLD
+.vault_password
+vars/secrets.yml

@@ -2,10 +2,10 @@
 - name: Validate Telegram variables
   ansible.builtin.assert:
     that:
-      - notification_subject | length > 0
-      - notification_body | length > 0
-      - telegram_bot_token | length > 0
-      - telegram_chat_id | length > 0
+      - "notification_subject | length > 0"
+      - "notification_body | length > 0"
+      - "telegram_bot_token | length > 0"
+      - "telegram_chat_id | length > 0"
     fail_msg: "Missing required variables. Make sure all required variables are set."
   tags:
     - telegram

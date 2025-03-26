@@ -8,13 +8,15 @@
       changed_when: false
 
     - name: Check if Docker Compose plugin is installed
-      ansible.builtin.shell: docker compose version
+      ansible.builtin.command: docker compose version
       register: docker_compose_version
       failed_when: false
       changed_when: false
-      args:
-        executable: /bin/bash
-
+      check_mode: no  # Run even in check mode
+      environment:
+        LANG: C
+        LC_ALL: C
+      
     - name: Verify Docker and Docker Compose requirements
       ansible.builtin.assert:
         that:

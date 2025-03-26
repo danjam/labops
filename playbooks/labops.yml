@@ -11,7 +11,7 @@
 # Regular playbooks that use the secrets
 - hosts: ubuntu
   vars_files:
-    - ../vars/secrets.yml
+    - { path: "../vars/secrets.yml", skip_missing: no }  # Fail if file is missing
   roles:
     - role: ubuntu_update
       vars:
@@ -21,7 +21,7 @@
 
 - hosts: docker_hosts
   vars_files:
-    - ../vars/secrets.yml
+    - { path: "../vars/secrets.yml", skip_missing: no }  # Fail if file is missing
   roles:
     - role: docker_compose_deploy
       vars:

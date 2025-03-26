@@ -4,3 +4,4 @@
       vars:
         upgrade_type: full
         auto_reboot: true
+        reboot_timeout: 300

@@ -87,12 +87,12 @@
         - name: Add host to docker_deployed group
           group_by:
             key: "docker_deployed"
-          changed_when:
+          changed_when: false
       rescue:
         - name: Add host to docker_failed group
           group_by:
             key: "docker_failed"
-          changed_when:
+          changed_when: false
 
 # Docker notification
 - hosts: localhost

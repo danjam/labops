@@ -9,6 +9,7 @@ apt_cache_valid_time: 3600
 # - safe: upgrade only packages that won't remove others (apt-get upgrade)
 # - full: upgrade all packages, removing others if needed (apt-get dist-upgrade)
 # - dist: full upgrade, potentially adding new packages (apt full-upgrade)
+# Note: These values match exactly what the Ansible apt module expects
 upgrade_type: "safe"
 
 # Whether to automatically reboot if required

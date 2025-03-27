@@ -1,15 +1,19 @@
 {# System Updates Summary Template #}
 {# Displays a summary of successful and failed system updates #}
-{% if groups['ubuntu_updated'] is defined and groups['ubuntu_updated']|length > 0 %}
+{% if groups is defined and 'ubuntu_updated' in groups and groups['ubuntu_updated']|length > 0 %}
 Successfully updated ({{ groups['ubuntu_updated']|length }}):
 {% for host in groups['ubuntu_updated']|sort %}
 ✅ {{ host }}
 {% endfor %}
+{% else %}
+No successful updates to report.
 {% endif %}
 
-{% if groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0 %}
+{% if groups is defined and 'ubuntu_failed' in groups and groups['ubuntu_failed']|length > 0 %}
 Failed updates ({{ groups['ubuntu_failed']|length }}):
 {% for host in groups['ubuntu_failed']|sort %}
 ❌ {{ host }}
 {% endfor %}
+{% else %}
+No failed updates to report.
 {% endif %}

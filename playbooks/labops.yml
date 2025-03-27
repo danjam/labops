@@ -32,31 +32,102 @@
 - hosts: ubuntu
   vars_files:
     - ../vars/secrets.yml
-  roles:
-    - role: ubuntu_update
-      vars:
-        upgrade_type: full
-        auto_reboot: true
-        reboot_timeout: 300
-  post_tasks:
-    - name: Send notification
+  tasks:
+    - block:
+        - name: Run ubuntu_update role
+          include_role:
+            name: ubuntu_update
+          vars:
+            upgrade_type: full
+            auto_reboot: true
+            reboot_timeout: 300
+            
+        - name: Add host to updated group
+          group_by:
+            key: "ubuntu_updated"
+          changed_when: false # Prevents reporting this as a change
+      rescue:
+        - name: Add host to failed group
+          group_by:
+            key: "ubuntu_failed"
+          changed_when: false # Prevents reporting this as a change
+
+- hosts: localhost
+  connection: local
+  vars_files:
+    - ../vars/secrets.yml
+  gather_facts: no
+  tasks:
+    - name: Send consolidated update notification
       include_role:
         name: telegram_notification
       vars:
-        notification_subject: "🖥️ System Update"
-        notification_body: "Ubuntu updates completed on {{ inventory_hostname }}"
+        notification_subject: "🖥️ System Updates Summary"
+        notification_body: |
+          {% if groups['ubuntu_updated'] is defined and groups['ubuntu_updated']|length > 0 %}
+          ✅ Successfully updated ({{ groups['ubuntu_updated']|length }}):
+          {% for host in groups['ubuntu_updated']|sort %}
+          - {{ host }}
+          {% endfor %}
+          {% endif %}
+          
+          {% if groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0 %}
+          ❌ Failed updates ({{ groups['ubuntu_failed']|length }}):
+          {% for host in groups['ubuntu_failed']|sort %}
+          - {{ host }}
+          {% endfor %}
+          {% endif %}
+
+      when: (groups['ubuntu_updated'] is defined and groups['ubuntu_updated']|length > 0) or 
+            (groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0)
+      run_once: true
 
 - hosts: docker_hosts
   vars_files:
     - ../vars/secrets.yml
-  roles:
-    - role: docker_compose_deploy
-      vars:
-        docker_compose_project_dir: /opt/homelab
-  post_tasks:
-    - name: Send notification
+  tasks:
+    - block:
+        - name: Run docker_compose_deploy role
+          include_role:
+            name: docker_compose_deploy
+          vars:
+            docker_compose_project_dir: /opt/homelab
+            
+        - name: Add host to docker_deployed group
+          group_by:
+            key: "docker_deployed"
+          changed_when: false # Prevents reporting this as a change
+      rescue:
+        - name: Add host to docker_failed group
+          group_by:
+            key: "docker_failed"
+          changed_when: false # Prevents reporting this as a change
+
+- hosts: localhost
+  connection: local
+  vars_files:
+    - ../vars/secrets.yml
+  gather_facts: no
+  tasks:
+    - name: Send consolidated docker deployment notification
       include_role:
         name: telegram_notification
       vars:
-        notification_subject: "🐳 Docker Build"
-        notification_body: "Docker build completed on {{ inventory_hostname }}"
+        notification_subject: "🐳 Docker Deployment Summary"
+        notification_body: |
+          {% if groups['docker_deployed'] is defined and groups['docker_deployed']|length > 0 %}
+          ✅ Successfully deployed ({{ groups['docker_deployed']|length }}):
+          {% for host in groups['docker_deployed']|sort %}
+          - {{ host }}
+          {% endfor %}
+          {% endif %}
+          
+          {% if groups['docker_failed'] is defined and groups['docker_failed']|length > 0 %}
+          ❌ Failed deployments ({{ groups['docker_failed']|length }}):
+          {% for host in groups['docker_failed']|sort %}
+          - {{ host }}
+          {% endfor %}
+          {% endif %}
+      when: (groups['docker_deployed'] is defined and groups['docker_deployed']|length > 0) or 
+            (groups['docker_failed'] is defined and groups['docker_failed']|length > 0)
+      run_once: true

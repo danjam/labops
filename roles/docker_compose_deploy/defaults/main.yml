@@ -1,4 +1,7 @@
 ---
+# Docker Compose Deploy role - default variables
+# Controls Docker Compose deployment configuration
+
 # Directory containing docker-compose.yml
 docker_compose_project_dir: "."
 

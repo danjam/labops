@@ -1,4 +1,7 @@
 ---
+# Ubuntu Update role - default variables
+# Controls update behavior and reboot handling
+
 # How long the apt cache should be considered valid (in seconds)
 apt_cache_valid_time: 3600
 
@@ -16,4 +19,3 @@ reboot_timeout: 600
 
 # The delay for the reboot (in seconds)
 reboot_delay: 5
-

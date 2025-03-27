@@ -1,4 +1,6 @@
 #!/bin/bash
+# LabOps execution script
+# Runs Ansible playbooks with proper configuration and vault handling
 set -e
 
 export ANSIBLE_CONFIG="./ansible.cfg"

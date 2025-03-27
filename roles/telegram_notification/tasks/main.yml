@@ -1,4 +1,7 @@
 ---
+# Telegram Notification role - main tasks
+# This file handles sending notifications to Telegram
+
 - name: Validate Telegram variables
   ansible.builtin.assert:
     that:
@@ -10,7 +13,6 @@
   tags:
     - telegram
     - notification
-
 
 - name: Send Telegram notification
   ansible.builtin.uri:

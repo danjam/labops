@@ -1,3 +1,7 @@
+---
+# Docker Compose Deploy playbook
+# Deploys Docker Compose applications on Docker hosts
+
 - hosts: docker_hosts
   roles:
     - role: docker_compose_deploy

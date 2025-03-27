@@ -1,3 +1,7 @@
+---
+# Ubuntu Update playbook
+# Updates Ubuntu systems with configurable settings
+
 - hosts: ubuntu
   roles:
     - role: ubuntu_update

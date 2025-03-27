@@ -1,4 +1,7 @@
 ---
+# Ubuntu Update role - main tasks
+# This file handles package updates and system reboot operations
+
 - name: Update apt cache
   apt:
     update_cache: yes

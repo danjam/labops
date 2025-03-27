@@ -1,6 +1,8 @@
 ---
-# Only on runner
+# Main LabOps playbook
+# Orchestrates the entire infrastructure management workflow
 
+# Validate secrets and setup
 - hosts: localhost
   connection: local
   gather_facts: no
@@ -8,14 +10,16 @@
     - name: Check and validate secrets
       ansible.builtin.include_tasks: ../tasks/check_secrets.yml
       tags: always
+      
     - name: Get runner hostname
       ansible.builtin.shell: hostname
       register: hostname
-      changed_when: false # Prevents reporting this as a change
+      changed_when: false
     - name: Set runner hostname
       ansible.builtin.set_fact: 
         runner_hostname: "{{ hostname.stdout }}"
 
+# Send start notification
 - hosts: localhost
   connection: local
   gather_facts: no
@@ -27,8 +31,7 @@
         notification_subject: "🛠️ LabOps Maintenance Starting"
         notification_body: "Runner: {{ runner_hostname }}"
 
-# Regular playbooks
-
+# Ubuntu updates
 - hosts: ubuntu
   vars_files:
     - ../vars/secrets.yml
@@ -45,13 +48,14 @@
         - name: Add host to updated group
           group_by:
             key: "ubuntu_updated"
-          changed_when: false # Prevents reporting this as a change
+          changed_when: false
       rescue:
         - name: Add host to failed group
           group_by:
             key: "ubuntu_failed"
-          changed_when: false # Prevents reporting this as a change
+          changed_when: false
 
+# Update notification
 - hosts: localhost
   connection: local
   vars_files:
@@ -68,6 +72,7 @@
             (groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0)
       run_once: true
 
+# Docker deployments
 - hosts: docker_hosts
   vars_files:
     - ../vars/secrets.yml
@@ -82,13 +87,14 @@
         - name: Add host to docker_deployed group
           group_by:
             key: "docker_deployed"
-          changed_when: false # Prevents reporting this as a change
+          changed_when:
       rescue:
         - name: Add host to docker_failed group
           group_by:
             key: "docker_failed"
-          changed_when: false # Prevents reporting this as a change
+          changed_when:
 
+# Docker notification
 - hosts: localhost
   connection: local
   vars_files:

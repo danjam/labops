@@ -66,31 +66,6 @@ You can use this role as a post-task notification:
         notification_body: "Ubuntu updates completed on {{ inventory_hostname }}"
 ```
 
-## Integration Example
-
-Here's a more comprehensive example integrating the role with multiple tasks:
-
-```yaml
----
-- hosts: ubuntu
-  vars_files:
-    - vars/secrets.yml
-  roles:
-    - role: ubuntu_update
-      vars:
-        upgrade_type: full
-        auto_reboot: true
-  post_tasks:
-    - name: Notify about update completion
-      include_role:
-        name: telegram_notification
-      vars:
-        notification_subject: "System Update"
-        notification_body: "✅ Ubuntu update completed on {{ inventory_hostname }}"
-        telegram_bot_token: "{{ telegram_bot_token }}"
-        telegram_chat_id: "{{ telegram_chat_id }}"
-```
-
 ## Advanced Usage
 
 ### Adding Variables to Notification Messages
@@ -136,7 +111,6 @@ You can conditionally send notifications based on task results:
 
 - It's recommended to store your Telegram bot token and chat ID in an encrypted file using Ansible Vault
 - The role uses `no_log: true` to prevent sensitive data from appearing in logs
-- Make sure your bot has appropriate permissions in the target chat
 
 ## Tags
 

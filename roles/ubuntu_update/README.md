@@ -69,13 +69,6 @@ ansible-playbook playbook.yml --tags "update"
 ansible-playbook playbook.yml --tags "cleanup"
 ```
 
-## Handlers
-
-The role includes the following handlers:
-
-- `Check if reboot required`: Checks if a system reboot is required after package updates
-- `Reboot if required`: Executes the reboot when necessary (only runs if `auto_reboot` is enabled)
-
 ## Integration with Other Roles
 
 ### Telegram Notifications

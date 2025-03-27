@@ -120,21 +120,6 @@ To deploy multiple Docker Compose applications:
         docker_compose_project_dir: /opt/app2
 ```
 
-### Dependency Installation
-
-This role doesn't install Docker or Docker Compose for you. If you need to install these dependencies, consider using a dedicated role or tasks before including the docker_compose_deploy role:
-
-```yaml
----
-- hosts: docker_servers
-  roles:
-    # Install Docker first
-    - role: some.docker_installation_role
-    
-    # Then deploy Docker Compose applications
-    - role: docker_compose_deploy
-```
-
 ### Resource Management
 
 The role automatically performs cleanup operations to prevent resource accumulation. The cleanup process:

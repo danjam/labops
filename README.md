@@ -3,6 +3,7 @@
 ![Ansible](https://img.shields.io/badge/Ansible-2.10+-black.svg?style=flat-square&logo=ansible)
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-Support-orange.svg?style=flat-square&logo=ubuntu)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg?style=flat-square&logo=docker)
+![Telegram](https://img.shields.io/badge/Telegram-Support-blue.svg?style=flat-square&logo=telegram)
 
 A comprehensive Ansible infrastructure management system for your homelab environment, supporting multiple platforms including Ubuntu servers, Synology NAS, Windows and macOS workstations.
 
@@ -63,25 +64,13 @@ LabOps automates three primary management tasks:
 
 3. **Configure your inventory**
 
-   Copy the example inventory and modify it for your environment:
-
-   ```bash
-   cp inventory/inventory.yml inventory/my-inventory.yml
-   # Edit inventory/my-inventory.yml with your hosts
-   ```
+   Edit `inventory/inventory.yml` with your hosts and configuration.
 
 4. **Set up Telegram notifications (optional)**
-
-   Create your secrets file from the template:
 
    ```bash
    cp vars/secrets.yml.template vars/secrets.yml
    # Edit vars/secrets.yml with your Telegram bot token and chat ID
-   ```
-
-   Secure your secrets file:
-
-   ```bash
    ansible-vault encrypt vars/secrets.yml
    ```
 
@@ -94,8 +83,6 @@ LabOps automates three primary management tasks:
 ## 🚀 Usage
 
 ### Running All Playbooks
-
-Use the provided shell script to run all playbooks with password prompts:
 
 ```bash
 ./run.sh
@@ -116,8 +103,6 @@ ansible-playbook -i inventory/my-inventory.yml playbooks/ubuntu_update.yml -kK
 
 ### Using with Vault-encrypted Secrets
 
-If you've encrypted your secrets file:
-
 ```bash
 ansible-playbook playbooks/your-playbook.yml -kK --ask-vault-pass
 # Or using a vault password file
@@ -125,8 +110,6 @@ ansible-playbook playbooks/your-playbook.yml -kK --vault-password-file .vault_pa
 ```
 
 ## 🏷️ Using Tags
-
-All roles support tags for granular execution:
 
 ### Ubuntu Update Tags
 
@@ -193,17 +176,6 @@ Updates Ubuntu systems with configurable options:
 | `reboot_delay` | Delay (seconds) before initiating reboot | `5` |
 | `apt_cache_valid_time` | How long (seconds) apt cache is valid | `3600` |
 
-**Example:**
-
-```yaml
-- hosts: ubuntu
-  roles:
-    - role: ubuntu_update
-      vars:
-        upgrade_type: full
-        auto_reboot: true
-```
-
 [Detailed ubuntu_update documentation](./roles/ubuntu_update/README.md)
 
 ### docker_compose_deploy
@@ -214,16 +186,6 @@ Manages Docker Compose applications:
 |----------|-------------|---------|
 | `docker_compose_project_dir` | Directory containing docker-compose.yml | `.` |
 | `docker_compose_file` | Docker compose file name | `docker-compose.yml` |
-
-**Example:**
-
-```yaml
-- hosts: docker_hosts
-  roles:
-    - role: docker_compose_deploy
-      vars:
-        docker_compose_project_dir: /opt/homelab
-```
 
 [Detailed docker_compose_deploy documentation](./roles/docker_compose_deploy/README.md)
 
@@ -238,30 +200,9 @@ Sends notifications via Telegram:
 | `notification_subject` | Subject line for notification | Yes |
 | `notification_body` | Body text for notification | Yes |
 
-**Example:**
-
-```yaml
-- hosts: ubuntu
-  roles:
-    - role: ubuntu_update
-  post_tasks:
-    - name: Send notification
-      include_role:
-        name: telegram_notification
-      vars:
-        notification_subject: "System Update"
-        notification_body: "Ubuntu updates completed on {{ inventory_hostname }}"
-        telegram_bot_token: "{{ telegram_bot_token }}"
-        telegram_chat_id: "{{ telegram_chat_id }}"
-```
-
 [Detailed telegram_notification documentation](./roles/telegram_notification/README.md)
 
-## 🔄 Workflow Examples
-
-### Complete System Management
-
-Here's an example of a complete management workflow:
+## 🔄 Workflow Example
 
 ```yaml
 ---
@@ -302,57 +243,11 @@ Here's an example of a complete management workflow:
         telegram_chat_id: "{{ telegram_chat_id }}"
 ```
 
-## ⚙️ Customization
-
-### Changing Update Behavior
-
-Edit `playbooks/ubuntu_update.yml` to modify the update behavior:
-
-```yaml
-- hosts: ubuntu
-  roles:
-    - role: ubuntu_update
-      vars:
-        upgrade_type: full    # Options: safe, full, dist
-        auto_reboot: true     # Whether to reboot automatically
-```
-
-### Changing Docker Compose Directory
-
-Edit `playbooks/docker_compose_deploy.yml` to modify the Docker Compose directory:
-
-```yaml
-- hosts: docker_hosts
-  roles:
-    - role: docker_compose_deploy
-      vars:
-        docker_compose_project_dir: /path/to/docker/compose
-```
-
-### Using the Main Playbook
-
-The `labops.yml` playbook includes all roles and performs validation:
-
-```yaml
-ansible-playbook playbooks/labops.yml -kK
-```
-
-This playbook:
-1. Validates the secrets file structure
-2. Runs the ubuntu_update role on Ubuntu hosts
-3. Runs the docker_compose_deploy role on Docker hosts
-
 ## 🔒 Security Best Practices
 
 - Replace the `-kK` flags (password prompts) with SSH key authentication
-- Use Ansible Vault for storing sensitive information:
-  ```bash
-  ansible-vault create vars/secrets.yml
-  ansible-vault edit vars/secrets.yml
-  ```
-- Consider using `ansible-vault encrypt_string` for encrypting individual variables
+- Use Ansible Vault for storing sensitive information
 - Store vault passwords in a secure location or use a password manager integration
-- The `check_secrets.yml` task validates that your secrets file exists and contains the required variables
 
 ## ❓ Troubleshooting
 
@@ -373,57 +268,14 @@ This playbook:
 ### Playbook Execution Issues
 
 - **Verbose Output**: Add `-v`, `-vv`, or `-vvv` for increasing levels of verbosity
-  ```bash
-  ansible-playbook playbooks/ubuntu_update.yml -vvv
-  ```
-
 - **Check Mode**: Run in check mode to see what would change without making changes
   ```bash
   ansible-playbook playbooks/ubuntu_update.yml --check
   ```
 
-### Docker Issues
-
-- **Docker Compose File Not Found**:
-  - Verify the path in `docker_compose_project_dir`
-  - Confirm file permissions allow reading the compose file
-
-- **Docker API Connection Errors**:
-  - Ensure the Docker service is running: `systemctl status docker`
-  - Check the user has permissions to access the Docker socket
-
-### Secrets Validation
-
-If you encounter errors with the secrets validation:
-```
-TASK [Fail if secrets file doesn't exist] *********************************************
-fatal: [localhost]: FAILED! => {"changed": false, "msg": "The secrets.yml file is required but was not found..."}
-```
-
-Make sure to:
-1. Create the secrets file from the template
-2. Add your Telegram bot token and chat ID
-3. Encrypt the file with Ansible Vault
-
-## 📊 Maintenance
-
-- Fact caching is enabled with a 24-hour timeout in the `.ansible_cache` directory
-- The `.gitignore` file prevents sensitive information from being committed
-- Consider adding scheduled execution via cron or systemd timers for automated maintenance
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
 
 ## 👤 Author
 

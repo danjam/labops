@@ -1,14 +1,34 @@
 ---
-# Initial play to validate secrets only once
+# Only on runner
+
 - hosts: localhost
   connection: local
   gather_facts: no
   tasks:
     - name: Check and validate secrets
-      include_tasks: ../tasks/check_secrets.yml
+      ansible.builtin.include_tasks: ../tasks/check_secrets.yml
       tags: always
+    - name: Get runner hostname
+      ansible.builtin.shell: hostname
+      register: hostname
+      changed_when: false # Prevents reporting this as a change
+    - name: Set runner hostname
+      ansible.builtin.set_fact: 
+        runner_hostname: "{{ hostname.stdout }}"
 
-# Regular playbooks that use the secrets
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_files:
+    - ../vars/secrets.yml
+  roles:
+    - role: telegram_notification
+      vars:
+        notification_subject: "🛠️ LabOps Maintenance Starting"
+        notification_body: "Runner: {{ runner_hostname }}"
+
+# Regular playbooks
+
 - hosts: ubuntu
   vars_files:
     - ../vars/secrets.yml
@@ -18,6 +38,13 @@
         upgrade_type: full
         auto_reboot: true
         reboot_timeout: 300
+  post_tasks:
+    - name: Send notification
+      include_role:
+        name: telegram_notification
+      vars:
+        notification_subject: "🖥️ System Update"
+        notification_body: "Ubuntu updates completed on {{ inventory_hostname }}"
 
 - hosts: docker_hosts
   vars_files:
@@ -26,3 +53,10 @@
     - role: docker_compose_deploy
       vars:
         docker_compose_project_dir: /opt/homelab
+  post_tasks:
+    - name: Send notification
+      include_role:
+        name: telegram_notification
+      vars:
+        notification_subject: "🐳 Docker Build"
+        notification_body: "Docker build completed on {{ inventory_hostname }}"

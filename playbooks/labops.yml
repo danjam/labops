@@ -63,21 +63,7 @@
         name: telegram_notification
       vars:
         notification_subject: "🖥️ System Updates Summary"
-        notification_body: |
-          {% if groups['ubuntu_updated'] is defined and groups['ubuntu_updated']|length > 0 %}
-          ✅ Successfully updated ({{ groups['ubuntu_updated']|length }}):
-          {% for host in groups['ubuntu_updated']|sort %}
-          - {{ host }}
-          {% endfor %}
-          {% endif %}
-          
-          {% if groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0 %}
-          ❌ Failed updates ({{ groups['ubuntu_failed']|length }}):
-          {% for host in groups['ubuntu_failed']|sort %}
-          - {{ host }}
-          {% endfor %}
-          {% endif %}
-
+        notification_body: "{{ lookup('template', '../templates/notifications/system_updates_summary.j2') }}"
       when: (groups['ubuntu_updated'] is defined and groups['ubuntu_updated']|length > 0) or 
             (groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0)
       run_once: true
@@ -114,20 +100,7 @@
         name: telegram_notification
       vars:
         notification_subject: "🐳 Docker Deployment Summary"
-        notification_body: |
-          {% if groups['docker_deployed'] is defined and groups['docker_deployed']|length > 0 %}
-          ✅ Successfully deployed ({{ groups['docker_deployed']|length }}):
-          {% for host in groups['docker_deployed']|sort %}
-          - {{ host }}
-          {% endfor %}
-          {% endif %}
-          
-          {% if groups['docker_failed'] is defined and groups['docker_failed']|length > 0 %}
-          ❌ Failed deployments ({{ groups['docker_failed']|length }}):
-          {% for host in groups['docker_failed']|sort %}
-          - {{ host }}
-          {% endfor %}
-          {% endif %}
+        notification_body: "{{ lookup('template', '../templates/notifications/docker_deployment_summary.j2') }}"
       when: (groups['docker_deployed'] is defined and groups['docker_deployed']|length > 0) or 
             (groups['docker_failed'] is defined and groups['docker_failed']|length > 0)
       run_once: true

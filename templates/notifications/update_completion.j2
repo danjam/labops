@@ -1,0 +1,12 @@
+✅ Ubuntu update completed on {{ inventory_hostname }}
+
+{% if upgrade_result is defined %}
+Packages upgraded: {{ upgrade_result.upgraded|default(0) }}
+Packages newly installed: {{ upgrade_result.installed|default(0) }}
+{% endif %}
+
+{% if reboot_required is defined and reboot_required.stat.exists %}
+System was rebooted: {{ "Yes" if auto_reboot else "No (reboot pending)" }}
+{% else %}
+No reboot required
+{% endif %}

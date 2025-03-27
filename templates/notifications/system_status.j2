@@ -1,0 +1,6 @@
+📊 *System Status Report*
+
+🖥️ **Hostname**: {{ inventory_hostname }}
+💾 **Free Disk Space**: {{ ansible_facts.mounts[0].size_available | human_readable }}
+🔄 **Uptime**: {{ ansible_facts.uptime_seconds | human_time }}
+🌡️ **Load Average**: {{ ansible_facts.loadavg.1 }}

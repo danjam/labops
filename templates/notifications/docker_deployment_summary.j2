@@ -1,0 +1,13 @@
+{% if groups['docker_deployed'] is defined and groups['docker_deployed']|length > 0 %}
+✅ Successfully deployed ({{ groups['docker_deployed']|length }}):
+{% for host in groups['docker_deployed']|sort %}
+- {{ host }}
+{% endfor %}
+{% endif %}
+
+{% if groups['docker_failed'] is defined and groups['docker_failed']|length > 0 %}
+❌ Failed deployments ({{ groups['docker_failed']|length }}):
+{% for host in groups['docker_failed']|sort %}
+- {{ host }}
+{% endfor %}
+{% endif %}

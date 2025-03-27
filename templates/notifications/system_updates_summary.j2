@@ -1,0 +1,13 @@
+{% if groups['ubuntu_updated'] is defined and groups['ubuntu_updated']|length > 0 %}
+✅ Successfully updated ({{ groups['ubuntu_updated']|length }}):
+{% for host in groups['ubuntu_updated']|sort %}
+- {{ host }}
+{% endfor %}
+{% endif %}
+
+{% if groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0 %}
+❌ Failed updates ({{ groups['ubuntu_failed']|length }}):
+{% for host in groups['ubuntu_failed']|sort %}
+- {{ host }}
+{% endfor %}
+{% endif %}

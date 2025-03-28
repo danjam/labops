@@ -60,6 +60,14 @@
           group_by:
             key: "ubuntu_failed"
           changed_when: false
+      always:
+        - name: Display update completion summary
+          debug:
+            msg: "{{ lookup('template', '../templates/update_completion.j2') }}"
+          tags:
+            - update
+            - packages
+            - summary
 
 # Update notification
 - hosts: localhost

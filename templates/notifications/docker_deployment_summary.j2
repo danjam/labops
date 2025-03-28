@@ -5,8 +5,6 @@ Successfully deployed ({{ groups['docker_deployed']|length }}):
 {% for host in groups['docker_deployed']|sort %}
 ✅ {{ host }}
 {% endfor %}
-{% else %}
-No successful deployments to report.
 {% endif %}
 
 {% if groups is defined and 'docker_failed' in groups and groups['docker_failed']|length > 0 %}
@@ -14,6 +12,4 @@ Failed deployments ({{ groups['docker_failed']|length }}):
 {% for host in groups['docker_failed']|sort %}
 ❌ {{ host }}
 {% endfor %}
-{% else %}
-No failed deployments to report.
 {% endif %}

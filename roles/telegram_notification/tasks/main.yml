@@ -15,23 +15,35 @@
     - notification
 
 - name: Send Telegram notification
-  ansible.builtin.uri:
-    url: "https://api.telegram.org/bot{{ telegram_bot_token }}/sendMessage"
-    method: POST
-    body_format: json
-    body:
-      chat_id: "{{ telegram_chat_id }}"
-      text: |
-        *{{ notification_subject }}*
-        
-        {{ notification_body }}
-      parse_mode: "Markdown"
-    status_code: 200
-  register: telegram_response
-  failed_when: telegram_response.status != 200
-  delegate_to: localhost
-  become: no
-  no_log: true  # Prevents sensitive data from appearing in logs
+  block:
+    - name: Attempt to send Telegram notification
+      ansible.builtin.uri:
+        url: "https://api.telegram.org/bot{{ telegram_bot_token }}/sendMessage"
+        method: POST
+        body_format: json
+        body:
+          chat_id: "{{ telegram_chat_id }}"
+          text: |
+            *{{ notification_subject }}*
+            
+            {{ notification_body }}
+          parse_mode: "Markdown"
+        status_code: 200
+        timeout: 30  # 30 second timeout
+      register: telegram_response
+      failed_when: telegram_response.status != 200
+      delegate_to: localhost
+      become: no
+      no_log: true  # Prevents sensitive data from appearing in logs
+  rescue:
+    - name: Log notification failure (but don't fail the playbook)
+      ansible.builtin.debug:
+        msg: "Failed to send Telegram notification: {{ telegram_response.msg | default('Unknown error') }}"
+      when: telegram_response is defined
+      
+    - name: Continue playbook execution
+      ansible.builtin.set_fact:
+        telegram_notification_failed: true
   tags:
     - telegram
     - notification

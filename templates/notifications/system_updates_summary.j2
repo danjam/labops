@@ -5,8 +5,6 @@ Successfully updated ({{ groups['ubuntu_updated']|length }}):
 {% for host in groups['ubuntu_updated']|sort %}
 ✅ {{ host }}
 {% endfor %}
-{% else %}
-No successful updates to report.
 {% endif %}
 
 {% if groups is defined and 'ubuntu_failed' in groups and groups['ubuntu_failed']|length > 0 %}
@@ -14,6 +12,4 @@ Failed updates ({{ groups['ubuntu_failed']|length }}):
 {% for host in groups['ubuntu_failed']|sort %}
 ❌ {{ host }}
 {% endfor %}
-{% else %}
-No failed updates to report.
 {% endif %}

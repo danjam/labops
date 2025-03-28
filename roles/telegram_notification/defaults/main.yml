@@ -1,0 +1,23 @@
+---
+# Telegram Notification role - default variables
+# Controls the behavior of Telegram notifications
+
+# Whether to continue the playbook execution if sending notification fails
+# If set to true, the role will set telegram_notification_failed to true but won't fail the play
+# If set to false, the play will fail if the notification cannot be sent
+telegram_fail_silently: false
+
+# Number of retry attempts for sending notifications
+telegram_retry_attempts: 3
+
+# Delay between retry attempts (in seconds)
+telegram_retry_delay: 5
+
+# Timeout for the HTTP request (in seconds)
+telegram_timeout: 30
+
+# Note: The following variables are REQUIRED and must be provided when using this role:
+# telegram_bot_token: The bot token for Telegram API authentication
+# telegram_chat_id: The chat ID to send messages to
+# notification_subject: The subject line for the notification
+# notification_body: The body text of the notification

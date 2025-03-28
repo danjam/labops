@@ -107,6 +107,62 @@ You can conditionally send notifications based on task results:
   when: app_status.rc != 0
 ```
 
+## Error Handling
+
+The role provides robust error handling capabilities for Telegram notifications:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `telegram_fail_silently` | Whether to continue playbook execution if notification fails | `false` |
+| `telegram_retry_attempts` | Number of retry attempts for sending notifications | `3` |
+| `telegram_retry_delay` | Delay between retry attempts (in seconds) | `5` |
+| `telegram_timeout` | Timeout for the HTTP request (in seconds) | `30` |
+
+### Available Status Variables
+
+After a notification attempt, the role sets these variables that can be checked in subsequent tasks:
+
+- `telegram_notification_sent`: Boolean indicating whether the notification was successfully sent
+- `telegram_notification_failed`: Boolean set to true if the notification failed
+- `telegram_error_message`: Contains the error message if the notification failed
+
+### Error Handling Examples
+
+**Silent error handling:**
+
+```yaml
+- name: Send notification with silent error handling
+  include_role:
+    name: telegram_notification
+  vars:
+    telegram_bot_token: "{{ telegram_bot_token }}"
+    telegram_chat_id: "{{ telegram_chat_id }}"
+    notification_subject: "System Update"
+    notification_body: "Task completed on {{ inventory_hostname }}"
+    telegram_fail_silently: true
+
+- name: Check if notification was sent
+  debug:
+    msg: "Notification was not sent. Error: {{ telegram_error_message }}"
+  when: telegram_notification_failed | default(false)
+```
+
+**With retries and extended timeout:**
+
+```yaml
+- name: Send critical notification with extended timeout and retries
+  include_role:
+    name: telegram_notification
+  vars:
+    telegram_bot_token: "{{ telegram_bot_token }}"
+    telegram_chat_id: "{{ telegram_chat_id }}"
+    notification_subject: "CRITICAL: System Alert"
+    notification_body: "Critical issue detected on {{ inventory_hostname }}"
+    telegram_retry_attempts: 5
+    telegram_retry_delay: 10
+    telegram_timeout: 60
+```
+
 ## Security Considerations
 
 - It's recommended to store your Telegram bot token and chat ID in an encrypted file using Ansible Vault

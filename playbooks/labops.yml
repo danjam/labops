@@ -30,6 +30,12 @@
       vars:
         notification_subject: "🛠️ LabOps Maintenance Starting"
         notification_body: "Runner: {{ runner_hostname }}"
+        telegram_fail_silently: true
+  post_tasks:
+    - name: Warn about notification failure
+      ansible.builtin.debug:
+        msg: "Warning: Unable to send start notification. Continuing execution."
+      when: telegram_notification_failed | default(false)
 
 # Ubuntu updates
 - hosts: ubuntu
@@ -68,8 +74,16 @@
       vars:
         notification_subject: "🖥️ System Updates Summary"
         notification_body: "{{ lookup('template', '../templates/notifications/system_updates_summary.j2') }}"
+        telegram_fail_silently: true
+        telegram_retry_attempts: 5
       when: (groups['ubuntu_updated'] is defined and groups['ubuntu_updated']|length > 0) or 
             (groups['ubuntu_failed'] is defined and groups['ubuntu_failed']|length > 0)
+      run_once: true
+    
+    - name: Log notification failure
+      ansible.builtin.debug:
+        msg: "Warning: Unable to send update notification. Error: {{ telegram_error_message }}"
+      when: telegram_notification_failed | default(false)
       run_once: true
 
 # Docker deployments
@@ -107,6 +121,14 @@
       vars:
         notification_subject: "🐳 Docker Deployment Summary"
         notification_body: "{{ lookup('template', '../templates/notifications/docker_deployment_summary.j2') }}"
+        telegram_fail_silently: true
+        telegram_retry_attempts: 5
       when: (groups['docker_deployed'] is defined and groups['docker_deployed']|length > 0) or 
             (groups['docker_failed'] is defined and groups['docker_failed']|length > 0)
+      run_once: true
+    
+    - name: Log notification failure
+      ansible.builtin.debug:
+        msg: "Warning: Unable to send Docker deployment notification. Error: {{ telegram_error_message }}"
+      when: telegram_notification_failed | default(false)
       run_once: true

@@ -13,10 +13,20 @@
   tags:
     - telegram
     - notification
+#
+# - name: Set default variables
+#   ansible.builtin.set_fact:
+#     telegram_fail_silently: "{{ telegram_fail_silently | default(false) }}"
+#     telegram_retry_attempts: "{{ telegram_retry_attempts | default(3) }}"
+#     telegram_retry_delay: "{{ telegram_retry_delay | default(5) }}"
+#     telegram_timeout: "{{ telegram_timeout | default(30) }}"
+#   tags:
+#     - telegram
+#     - notification
 
 - name: Send Telegram notification
   block:
-    - name: Attempt to send Telegram notification
+    - name: Attempt to send Telegram notification with retries
       ansible.builtin.uri:
         url: "https://api.telegram.org/bot{{ telegram_bot_token }}/sendMessage"
         method: POST
@@ -29,21 +39,35 @@
             {{ notification_body }}
           parse_mode: "Markdown"
         status_code: 200
-        timeout: 30  # 30 second timeout
+        timeout: "{{ telegram_timeout }}"  # Configurable timeout
       register: telegram_response
       failed_when: telegram_response.status != 200
       delegate_to: localhost
       become: no
       no_log: true  # Prevents sensitive data from appearing in logs
+      retries: "{{ telegram_retry_attempts }}"
+      delay: "{{ telegram_retry_delay }}"
+      until: telegram_response.status is defined and telegram_response.status == 200
   rescue:
-    - name: Log notification failure (but don't fail the playbook)
+    - name: Log notification failure
       ansible.builtin.debug:
         msg: "Failed to send Telegram notification: {{ telegram_response.msg | default('Unknown error') }}"
       when: telegram_response is defined
       
-    - name: Continue playbook execution
+    - name: Set failure flag
       ansible.builtin.set_fact:
         telegram_notification_failed: true
+        telegram_error_message: "{{ telegram_response.msg | default('Unknown error') }}"
+      
+    - name: Fail the play if we shouldn't fail silently
+      ansible.builtin.fail:
+        msg: "Failed to send Telegram notification: {{ telegram_response.msg | default('Unknown error') }}"
+      when: not telegram_fail_silently
+  always:
+    - name: Set success flag
+      ansible.builtin.set_fact:
+        telegram_notification_sent: "{{ telegram_response.status is defined and telegram_response.status == 200 }}"
+      when: telegram_response is defined
   tags:
     - telegram
     - notification

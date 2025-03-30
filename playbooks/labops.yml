@@ -107,6 +107,14 @@
             name: docker_compose_deploy
           vars:
             docker_compose_project_dir: /opt/homelab
+          register: docker_result
+            
+        - name: Display docker deployment completion summary
+          debug:
+            msg: "{{ lookup('template', '../templates/docker_deployment_completion.j2') }}"
+          tags:
+            - deploy
+            - summary
             
         - name: Add host to docker_deployed group
           group_by:

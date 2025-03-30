@@ -1,0 +1,17 @@
+🐳 Docker deployment completed on {{ inventory_hostname }}
+
+{% if docker_result is defined and docker_result.changed %}
+Services updated: {{ docker_result.container_results|default({})|length }}
+{% for container_name, container_info in docker_result.container_results|default({})|dictsort %}
+- {{ container_name }}{% if container_info.status is defined %} ({{ container_info.status }}){% endif %}
+{% endfor %}
+{% else %}
+All services were already up-to-date
+{% endif %}
+
+{% if docker_result is defined and docker_result.pulled_images|default([])|length > 0 %}
+Images pulled:
+{% for image in docker_result.pulled_images|default([]) %}
+- {{ image }}
+{% endfor %}
+{% endif %}

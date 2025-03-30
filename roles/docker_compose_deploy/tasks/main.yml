@@ -57,6 +57,7 @@
     remove_orphans: yes
     pull: always
   when: compose_file_stat.stat.exists | default(false)
+  register: docker_result
   tags:
     - deploy
 

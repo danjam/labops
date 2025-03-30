@@ -46,7 +46,7 @@
   tasks:
     - block:
         - name: Run ubuntu_update role
-          include_role:
+          ansible.builtin.include_role:
             name: ubuntu_update
           vars:
             upgrade_type: full
@@ -54,17 +54,17 @@
             reboot_timeout: 300
             
         - name: Add host to updated group
-          group_by:
+          ansible.builtin.group_by:
             key: "ubuntu_updated"
           changed_when: false
       rescue:
         - name: Add host to failed group
-          group_by:
+          ansible.builtin.group_by:
             key: "ubuntu_failed"
           changed_when: false
       always:
         - name: Display update completion summary
-          debug:
+          ansible.builtin.debug:
             msg: "{{ lookup('template', '../templates/update_completion.j2') }}"
           tags:
             - update
@@ -79,7 +79,7 @@
   gather_facts: no
   tasks:
     - name: Send consolidated update notification
-      include_role:
+      ansible.builtin.include_role:
         name: telegram_notification
       vars:
         notification_subject: "🖥️ System Updates Summary"
@@ -103,26 +103,26 @@
   tasks:
     - block:
         - name: Run docker_compose_deploy role
-          include_role:
+          ansible.builtin.include_role:
             name: docker_compose_deploy
           vars:
             docker_compose_project_dir: /opt/homelab
           register: docker_result
             
         - name: Display docker deployment completion summary
-          debug:
+          ansible.builtin.debug:
             msg: "{{ lookup('template', '../templates/docker_deployment_completion.j2') }}"
           tags:
             - deploy
             - summary
             
         - name: Add host to docker_deployed group
-          group_by:
+          ansible.builtin.group_by:
             key: "docker_deployed"
           changed_when: false
       rescue:
         - name: Add host to docker_failed group
-          group_by:
+          ansible.builtin.group_by:
             key: "docker_failed"
           changed_when: false
 
@@ -134,7 +134,7 @@
   gather_facts: no
   tasks:
     - name: Send consolidated docker deployment notification
-      include_role:
+      ansible.builtin.include_role:
         name: telegram_notification
       vars:
         notification_subject: "🐳 Docker Deployment Summary"

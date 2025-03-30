@@ -13,16 +13,6 @@
   tags:
     - telegram
     - notification
-#
-# - name: Set default variables
-#   ansible.builtin.set_fact:
-#     telegram_fail_silently: "{{ telegram_fail_silently | default(false) }}"
-#     telegram_retry_attempts: "{{ telegram_retry_attempts | default(3) }}"
-#     telegram_retry_delay: "{{ telegram_retry_delay | default(5) }}"
-#     telegram_timeout: "{{ telegram_timeout | default(30) }}"
-#   tags:
-#     - telegram
-#     - notification
 
 - name: Send Telegram notification
   block:

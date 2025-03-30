@@ -160,4 +160,4 @@ This role is compatible with:
 
 ## License
 
-MIT
+GNU General Public License v3.0 (GPL-3.0)

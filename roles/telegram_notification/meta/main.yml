@@ -3,7 +3,7 @@ galaxy_info:
   role_name: telegram_notification
   author: danjam
   description: Role for sending Telegram notifications from Ansible
-  license: MIT
+  license: GPL-3.0-or-later
   min_ansible_version: 2.10
   platforms:
     - name: GenericLinux

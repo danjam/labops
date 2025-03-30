@@ -135,4 +135,4 @@ This role is compatible with the following Ubuntu versions:
 
 ## License
 
-MIT
+GNU General Public License v3.0 (GPL-3.0)

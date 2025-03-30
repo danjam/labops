@@ -41,6 +41,8 @@
 - hosts: ubuntu
   vars_files:
     - ../vars/secrets.yml
+  vars:
+    auto_reboot: true
   tasks:
     - block:
         - name: Run ubuntu_update role

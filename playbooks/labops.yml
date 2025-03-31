@@ -65,7 +65,7 @@
       always:
         - name: Display update completion summary
           ansible.builtin.debug:
-            msg: "{{ lookup('template', '../templates/update_completion.j2') }}"
+            msg: "{{ lookup('template', '../templates/ubuntu_update_completion.j2') }}"
           tags:
             - update
             - packages

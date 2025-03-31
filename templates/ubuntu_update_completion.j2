@@ -1,0 +1,20 @@
+✅ Ubuntu update completed on {{ inventory_hostname }}
+{% if upgrade_result is defined %}
+
+Summary:
+- Packages upgraded: {{ upgrade_result.upgraded|default(0) }}
+- Packages newly installed: {{ upgrade_result.installed|default(0) }}
+{% if upgrade_result.stdout_lines is defined and upgrade_result.stdout_lines|length > 0 and upgrade_result.changed %}
+
+Package changes:
+{% for line in upgrade_result.stdout_lines %}
+{% if 'Inst ' in line %}
+- {{ line }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if reboot_required is defined and reboot_required.stat.exists %}
+
+System was rebooted: {{ "Yes" if auto_reboot else "No (reboot pending)" }}
+{% endif %}

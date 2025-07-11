@@ -1,0 +1,205 @@
+---
+- name: Update Ubuntu and manage Docker Compose stack
+  hosts: ubuntu_servers
+  become: yes
+  gather_facts: yes
+  gather_subset:
+    - "!all"
+    - "!any"
+    - distribution
+    - distribution_release
+    - architecture
+    - service_mgr
+  vars:
+    docker_compose_path: "/opt/homelab"
+    ansible_python_interpreter: "/usr/bin/python3"
+    docker_gpg_key: "https://download.docker.com/linux/ubuntu/gpg"
+    docker_repo_url: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+
+  tasks:
+    - name: Pre-flight validation
+      block:
+        - name: Validate Ubuntu system
+          assert:
+            that:
+              - ansible_distribution == "Ubuntu"
+              - ansible_service_mgr == "systemd"
+            fail_msg: "This playbook requires Ubuntu with systemd"
+
+        - name: Validate compose directory
+          stat:
+            path: "{{ docker_compose_path }}"
+          register: compose_dir
+          failed_when: not compose_dir.stat.exists or not compose_dir.stat.isdir
+      tags: always
+
+    - name: System maintenance
+      block:
+        - name: Update package cache and upgrade system
+          apt:
+            update_cache: yes
+            upgrade: dist
+            autoremove: yes
+            autoclean: yes
+            cache_valid_time: 3600
+          async: 900
+          poll: 15
+          register: system_upgrade
+
+        - name: Check reboot requirement
+          stat:
+            path: "/var/run/reboot-required"
+          register: reboot_needed
+
+        - name: Perform reboot if required
+          reboot:
+            msg: "System reboot for updates"
+            connect_timeout: 5
+            reboot_timeout: 300
+            pre_reboot_delay: 0
+            post_reboot_delay: 30
+          when: reboot_needed.stat.exists
+
+      rescue:
+        - name: Log system update failure
+          debug:
+            msg: "WARNING: System update failed, continuing with Docker operations"
+      tags: update
+
+    - name: Docker management
+      block:
+        - name: Check Docker status
+          systemd:
+            name: docker
+          register: docker_service
+          failed_when: false
+
+        - name: Install Docker if needed
+          block:
+            - name: Install prerequisites
+              apt:
+                name:
+                  - ca-certificates
+                  - curl
+                  - gnupg
+                  - lsb-release
+                state: present
+
+            - name: Add Docker GPG key
+              apt_key:
+                url: "{{ docker_gpg_key }}"
+                state: present
+
+            - name: Add Docker repository
+              apt_repository:
+                repo: "{{ docker_repo_url }}"
+                state: present
+
+            - name: Install Docker packages
+              apt:
+                name:
+                  - docker-ce
+                  - docker-ce-cli
+                  - containerd.io
+                  - docker-compose-plugin
+                state: present
+                update_cache: yes
+          when: docker_service.status.ActiveState is not defined or docker_service.status.ActiveState != "active"
+
+        - name: Ensure Docker is active
+          systemd:
+            name: docker
+            state: started
+            enabled: yes
+            daemon_reload: yes
+
+        - name: Verify Docker Compose file
+          stat:
+            path: "{{ docker_compose_path }}/docker-compose.yml"
+          register: compose_file
+
+        - name: Docker Compose operations
+          when: compose_file.stat.exists
+          block:
+            - name: Check current image status
+              command: docker compose config --images
+              args:
+                chdir: "{{ docker_compose_path }}"
+              register: current_images
+              changed_when: false
+
+            - name: Pull latest images
+              command: docker compose pull --quiet
+              args:
+                chdir: "{{ docker_compose_path }}"
+              register: pull_operation
+              changed_when: "'Downloaded newer image' in pull_operation.stdout or 'Pulled' in pull_operation.stdout"
+
+            - name: Restart services with updates
+              command: docker compose up -d --remove-orphans
+              args:
+                chdir: "{{ docker_compose_path }}"
+              when: pull_operation.changed
+              register: compose_restart
+
+            - name: Verify service health
+              command: docker compose ps --format json
+              args:
+                chdir: "{{ docker_compose_path }}"
+              register: service_status
+              until: >
+                (service_status.stdout | from_json | length > 0) and
+                (service_status.stdout | from_json | selectattr('State', 'match', '^(running|Up)') | list | length) ==
+                (service_status.stdout | from_json | length)
+              retries: 12
+              delay: 5
+              changed_when: false
+              when: compose_restart is defined and compose_restart.changed
+
+        - name: Optimize Docker resources
+          docker_prune:
+            images: yes
+            images_filters:
+              dangling: false
+            networks: yes
+            volumes: yes
+            builder_cache: yes
+          register: cleanup_result
+
+      rescue:
+        - name: Handle Docker failures
+          debug:
+            msg: "Docker operation failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      tags: docker
+
+  post_tasks:
+    - name: Collect final status
+      set_fact:
+        deployment_summary:
+          host: "{{ inventory_hostname }}"
+          os_updated: "{{ system_upgrade.changed | default(false) }}"
+          reboot_performed: "{{ reboot_needed.stat.exists | default(false) }}"
+          docker_status: "{{ 'Active' if docker_service.status.ActiveState == 'active' else 'Installed/Started' }}"
+          compose_updated: "{{ pull_operation.changed | default(false) }}"
+          cleanup_performed: "{{ cleanup_result.changed | default(false) }}"
+
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "🚀 DEPLOYMENT COMPLETE"
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          - "📍 Host: {{ deployment_summary.host }}"
+          - "🔄 OS Updates: {{ '✅ Applied' if deployment_summary.os_updated else '✨ Current' }}"
+          - "🔄 Reboot: {{ '✅ Completed' if deployment_summary.reboot_performed else '⚡ Not Required' }}"
+          - "🐳 Docker: {{ deployment_summary.docker_status }}"
+          - "📦 Compose: {{ '🆙 Updated' if deployment_summary.compose_updated else '✨ Current' }}"
+          - "🧹 Cleanup: {{ '🗑️ Freed Space' if deployment_summary.cleanup_performed else '✨ Nothing to Clean' }}"
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      tags: always
+
+  handlers:
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted
+        daemon_reload: yes
